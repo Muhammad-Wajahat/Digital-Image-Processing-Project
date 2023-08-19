@@ -1,0 +1,806 @@
+classdef DIPproject_exported < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                     matlab.ui.Figure
+        SaveImageButton              matlab.ui.control.Button
+        UITable                      matlab.ui.control.Table
+        ValueEditField               matlab.ui.control.EditField
+        ValueEditFieldLabel          matlab.ui.control.Label
+        ChangeBrightnessSlider       matlab.ui.control.Slider
+        ChangeBrightnessSliderLabel  matlab.ui.control.Label
+        LoadImage2Button             matlab.ui.control.Button
+        LoadImage1Button             matlab.ui.control.Button
+        ProcessedImagePanel          matlab.ui.container.Panel
+        ProcessedImg                 matlab.ui.control.UIAxes
+        Image2Panel                  matlab.ui.container.Panel
+        Image2                       matlab.ui.control.UIAxes
+        ProcessImageButton           matlab.ui.control.Button
+        OptionsDropDown              matlab.ui.control.DropDown
+        OptionsDropDownLabel         matlab.ui.control.Label
+        OperationsDropDown           matlab.ui.control.DropDown
+        OperationsDropDownLabel      matlab.ui.control.Label
+        Image1Panel                  matlab.ui.container.Panel
+        Image1                       matlab.ui.control.UIAxes
+    end
+
+    
+    methods (Access = private)
+
+        function processedImg = colorSplash(app,img1, optionValue)
+            processedImg=img1;
+            imgRow = size(img1,1);
+            imgCol = size(img1,2);
+            img3 = im2double(img1);
+            if optionValue == "Red"
+                for i=1:imgRow
+                    for j=1:imgCol 
+                        if processedImg(i,j,1)<=150 || processedImg(i,j,2)>30 && processedImg(i,j,3)>40
+                            processedImg(i,j,1)=0;
+                            processedImg(i,j,2)=0;
+                            processedImg(i,j,3)=0;
+                        else
+                            img3(i,j,1)=0;
+                            img3(i,j,2)=0;
+                            img3(i,j,3)=0;
+                        end
+                    end
+                end
+            elseif optionValue == "Green"
+                for i=1:imgRow
+                    for j=1:imgCol 
+                        if processedImg(i,j,2)<=100 || (processedImg(i,j,1)>120 || processedImg(i,j,3)>30)
+                            processedImg(i,j,1)=0;
+                            processedImg(i,j,2)=0;
+                            processedImg(i,j,3)=0;
+                        else
+                            img3(i,j,1)=0;
+                            img3(i,j,2)=0;
+                            img3(i,j,3)=0;
+                        end
+                    end
+                end
+            else
+                for i=1:imgRow
+                    for j=1:imgCol 
+                        if processedImg(i,j,3)<=100 || (processedImg(i,j,2)>200 || processedImg(i,j,1)>200)
+                            processedImg(i,j,1)=0;
+                            processedImg(i,j,2)=0;
+                            processedImg(i,j,3)=0;
+                        else
+                            img3(i,j,1)=0;
+                            img3(i,j,2)=0;
+                            img3(i,j,3)=0;
+                        end
+                    end
+                end
+            end
+            processedImg = im2double(processedImg);
+            img3=im2gray(img3);
+            processedImg = img3+processedImg;
+        end
+        
+        function processedImg = greenScreenBackground(app, img1, img2)
+            imgRow = size(img1,1);
+            imgCol = size(img1,2);
+            imgBW = img1(:,:,2)<=200 | (img1(:,:,1)>=148 & img1(:,:,3)>=148);
+            imgWB = 1-imgBW;
+            imgBW = uint8(imgBW);
+            imgWB = uint8(imgWB);
+            imgBackground = imresize(img2,[imgRow imgCol]);
+            imgBackground = imgWB.*imgBackground;
+            imgBW = img1.*imgBW;
+            processedImg = imgBW+imgBackground;
+        end
+        
+        function invertedImg = invertImage(app, img1)
+            channel=size(img1,1);
+            if channel == 1
+                invertedImg = 1-img1;
+            else
+                invertedImg= 255-img1;
+            end
+        end
+        
+        function grayImg = grayscaleImage(app, img1, optionValue)
+            img2=img1;
+            img1=im2double(img1);
+            if optionValue =="Regular"
+                img1=rgb2gray(img1);
+                grayImg = img1;
+            elseif optionValue=="Noir"
+                img1=rgb2gray(img1);
+                img2(:,:,1)=220;
+                img2(:,:,2)=217;
+                img2(:,:,3)=200; 
+                img2 = im2double(img2);
+                img1=img1.*(1.25);
+                img1=img1+(0.01);
+                img1 = img1.*img2;
+                img1 = img1+0.15;
+                grayImg = img1.^(4.5);
+            elseif optionValue=="Soft"
+                img1=rgb2gray(img1);
+                img2(:,:,1)=255;
+                img2(:,:,2)=239;
+                img2(:,:,3)=236; 
+                img2 = im2double(img2);
+                img1=img1+(0.2);
+                img1 = img1.*img2;
+                img1 = img1+0.2;
+                grayImg = img1.^(2);
+            elseif optionValue=="Classic"
+                img1=rgb2gray(img1);
+                img1=img1.*(1.25);
+                img1=img1+(0.01); 
+                img1 = img1+0.15;
+                grayImg = img1.^(5);
+            elseif optionValue=="Blood Mist"
+                img2(:,:,1)=249;
+                img2(:,:,2)=175;
+                img2(:,:,3)=163;
+                img2 = im2double(img2);
+                img1=img1.*(1.25);
+                img1=img1+(0.01);
+                img1 = img1.*img2;
+                img1 = img1+0.15;
+                grayImg = img1.^(5);
+            elseif optionValue=="Dark"
+                img1=rgb2gray(img1);
+                img2(:,:,1)=190;
+                img2(:,:,2)=175;
+                img2(:,:,3)=163;
+                img2 = im2double(img2);s
+                img1=img1.*(1.25);
+                img1=img1+(0.01); 
+                img1 = img1.*img2;
+                img1 = img1+0.15;
+                grayImg = img1.^(3);
+            end
+        end
+        
+        function binaryImg = BinarizeImage(app, img1, threshold)
+            binaryImg=im2bw(img1,threshold);
+        end
+        
+        function processedImg = contrastStretching(app, img1)
+            imgRow = size(img1,1);
+            imgCol = size(img1,2);
+            minVal = min(img1(:));
+            maxVal = max(img1(:));
+            processedImg(:,:,:)=(img1(:,:,:)-minVal).*((255)/(maxVal-minVal));
+        end
+        
+        function processedImg = applyFilters(app, img1, optionValue)         
+            processedImg=img1;
+            img1=im2double(img1);
+            if optionValue == "Cool"
+                processedImg(:,:,1)=153;
+                processedImg(:,:,2)=204;
+                processedImg(:,:,3)=255;
+                processedImg = im2double(processedImg);
+                processedImg = processedImg.^(0.6); 
+                processedImg = processedImg.^(0.9);
+                processedImg = im2double(img1).*processedImg;
+                processedImg = processedImg+0.2;
+                processedImg = processedImg.^(2.2);
+            elseif optionValue == "Omae Wa Mo Shinderu"
+                processedImg(:,:,1)=255;
+                processedImg(:,:,2)=204;
+                processedImg(:,:,3)=204; 
+                processedImg = im2double(processedImg);
+                processedImg = processedImg.^(-4); 
+                img1= img1.^(0.3);
+                processedImg = img1.*processedImg;
+                processedImg = processedImg+0.2;
+                processedImg = processedImg.^(-2.2);
+            elseif optionValue == "Greenish"
+                img2=processedImg;
+                img2(:,:,1)=229;
+                img2(:,:,2)=255;
+                img2(:,:,3)=255;
+                img2 = im2double(img2);
+                processedImg=img1;
+                processedImg=processedImg.*(0.95);
+                processedImg=processedImg-(0.1);
+                processedImg(:,:,1)=processedImg(:,:,1)-0.03; 
+                processedImg = processedImg.*img2;
+                processedImg = processedImg+0.2;
+                processedImg = processedImg.^(2.3);
+            elseif optionValue == "Soft"
+                processedImg=processedImg.*(1.02);
+                processedImg=processedImg+0.02; 
+                processedImg(:,:,1)=processedImg(:,:,1)+0.15;
+            end
+        end
+        
+        function processedImg = diadicOperations(app,img1,img2,optionValue)
+            img1 = im2double(img1);
+            imgRow=size(img1,1);
+            imgCol=size(img1,2);
+            img2 = imresize(img2,[imgRow imgCol]);
+            img2=im2double(img2);
+            if optionValue == "Add"
+                processedImg=img1+img2;
+            elseif optionValue == "Subtract"
+                processedImg=img1-img2;
+            elseif optionValue == "Multiply"
+                processedImg=img1.*img2;
+            elseif optionValue == "Divide"
+                processedImg=img1./img2;
+            end
+        end
+        
+        function processedImg = messageEncoding(app, img1,message)
+            img1(1:1:1)= length(message);
+            message = strtrim(message);
+            % Length of the message where each character is 8 bits
+            len = length(message) * 8;
+            % Get all the ASCII values of the characters of the message
+            ascii_value = uint8(message);
+            % Convert the decimal values to binary
+            bin_message = transpose(dec2bin(ascii_value, 8));
+            % Get all the binary digits in separate row
+            bin_message = bin_message(:);
+            % Length of the binary message
+            N = length(bin_message);
+            % Converting the char array to numeric array
+            bin_num_message = zeros(N,1);
+            for k = 1:N
+              if(bin_message(k) == '1')
+                  bin_num_message(k) = 1;
+              else
+                  bin_num_message(k) = 0;
+              end
+            end
+            % bin_num_message=str2num(bin_message);
+            % disp(bin_num_message);
+            % Initialize output as input
+            processedImg = img1;
+             
+            % Get height and width for traversing through the image
+            Rows = size(img1, 1);
+            Columns = size(img1, 2);
+            % Counter for number of embedded bits
+            embed_counter = 1;
+            % Traverse through the image
+            for i = 1 : Rows
+                for j = 1 : Columns
+                    % Finding the Least Significant Bit of the current pixel
+                    LSB = mod(double(img1(i, j)), 2);
+                    if(embed_counter > len || LSB == bin_num_message(embed_counter))
+                        processedImg(i,j) = img1(i,j);
+                    elseif(LSB == 1)
+                        processedImg(i,j) = (img1(i,j) - 1);
+                    elseif(LSB == 0)
+                        processedImg(i,j) = (img1(i,j) + 1);
+                    end
+            %             Find whether the bit is same or needs to change
+            %             temp = double(xor(LSB, bin_num_message(embed_counter)));
+            %             Updating the output to input + temp
+            %             output(i, j) = input1(i, j)+temp;
+                         
+                    % Increment the embed counter
+                    embed_counter = embed_counter+1;
+                end
+            end
+
+            
+        end
+        
+        function results = messageDecoding(app, img1)
+            Rows = size(img1, 1);
+            Columns = size(img1, 2);        
+            % Number of bits in the message
+            message_length = double(img1(1:1:1) ) * 8;
+            % counter to keep track of number of bits extracted
+            counter = 1;
+            % Traverse through the image
+            for i = 1 : Rows
+                for j = 1 : Columns
+                    % If more bits remain to be extracted
+                    if (counter <= message_length)
+                        % Store the LSB of the pixel in extracted_bits
+                        extracted_bits(counter) = mod(double(img1(i, j)), 2);
+                        % Increment the counter
+                        counter = counter + 1;
+                    end
+                end
+            end
+            % Powers of 2 to get the ASCII value from binary
+            binValues = [ 128 64 32 16 8 4 2 1 ];
+            % each element in each row
+            extracted_bits = extracted_bits(:);
+            % Each row is the bits of the character
+            % in the hidden text
+            binMatrix = reshape(extracted_bits, 8, message_length/8);
+            binMatrix = reshape(extracted_bits, 8, message_length/8);
+            % Convert the extracted bits to characters
+            % by multiplying with powers of 2
+            textString =char(binValues*binMatrix)
+            disp(textString);
+        end
+    end
+    
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Value changed function: OperationsDropDown
+        function OperationsDropDownValueChanged(app, event)
+            global value;
+            global optionsValue;
+            value = app.OperationsDropDown.Value;
+            if value == "Change Brightness"
+                app.ChangeBrightnessSliderLabel.Text = "Change Brightness";
+                app.ChangeBrightnessSlider.Limits = [-255 255];
+                app.ChangeBrightnessSlider.Value = 0;
+                app.Image2Panel.Visible="off";
+                app.LoadImage2Button.Visible="off";
+                app.ChangeBrightnessSliderLabel.Visible = "on";
+                app.ChangeBrightnessSlider.Visible = "on";
+                app.ValueEditFieldLabel.Text="Brightness Value";
+                app.ProcessImageButton.Visible="off";
+                app.OptionsDropDown.Visible="off";
+                app.OptionsDropDownLabel.Visible="off";
+                app.ValueEditField.Visible = "on";
+                app.ValueEditFieldLabel.Visible="on";
+            elseif value == "Change Gemma Correction"
+                app.ChangeBrightnessSliderLabel.Text = "Change Gemma";
+                app.ChangeBrightnessSlider.Limits = [0 2.5];
+                app.ChangeBrightnessSlider.Value = 1;
+                app.Image2Panel.Visible="off";
+                app.LoadImage2Button.Visible="off";
+                app.ChangeBrightnessSliderLabel.Visible = "on";
+                app.ChangeBrightnessSlider.Visible = "on";
+                app.ValueEditFieldLabel.Text="Gemma Value";
+                app.OptionsDropDown.Visible="off";
+                app.OptionsDropDownLabel.Visible="off";
+                app.ProcessImageButton.Visible="off"
+                app.ValueEditField.Visible = "on";
+                app.ValueEditFieldLabel.Visible="on";
+            elseif value == "Change Contrast"
+                app.ChangeBrightnessSliderLabel.Text = "Change Contrast";
+                app.Image2Panel.Visible="off";
+                app.LoadImage2Button.Visible="off";
+                app.ChangeBrightnessSliderLabel.Visible = "on";
+                app.OptionsDropDown.Items=["Change Contrast Value","Contrast Stretching"];
+                app.OptionsDropDown.Value="Change Contrast Value";
+                app.ChangeBrightnessSlider.Limits=[0 2.5];
+                app.ChangeBrightnessSlider.Value=1;
+                app.ChangeBrightnessSlider.Visible = "on";
+                app.OptionsDropDown.Visible="on";
+                app.OptionsDropDownLabel.Visible="on";
+                app.ValueEditField.Visible = "on";
+                app.ValueEditFieldLabel.Visible="on"
+                app.ValueEditFieldLabel.Text="Contrast Value";
+                app.ChangeBrightnessSliderLabel.Visible = "on";
+                app.ChangeBrightnessSlider.Visible = "on";
+                app.ProcessImageButton.Visible="off"
+            elseif value == "Grayscale Image"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.Image2Panel.Visible="off";
+                app.OptionsDropDown.Items=["Regular","Noir","Soft", "Classic","Blood Mist","Dark"];
+                app.OptionsDropDown.Value="Regular";
+                app.OptionsDropDownLabel.Visible="on";
+                app.OptionsDropDown.Visible="on";
+                app.OptionsDropDownLabel.Visible="on";
+                app.LoadImage2Button.Visible="off"
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"            
+            elseif value == "Color Splash"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.OptionsDropDown.Visible="on";
+                app.OptionsDropDownLabel.Visible="on";
+                app.OptionsDropDown.Items=["Red","Blue","Green"];
+                app.OptionsDropDown.Value="Red";
+                app.Image2Panel.Visible="off"
+                app.LoadImage2Button.Visible="off"
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"
+            elseif value == "Apply Filters"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.Image2Panel.Visible="off";
+                app.OptionsDropDown.Visible="on";
+                app.OptionsDropDownLabel.Visible="on";
+                app.OptionsDropDown.Items=["Cool","Soft","Omae Wa Mo Shinderu","Greenish"];
+                app.OptionsDropDown.Value="Cool";
+                app.LoadImage2Button.Visible="off";
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"
+            elseif value == "Binarize Image"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.Image2Panel.Visible="off"
+                app.OptionsDropDown.Visible="on";
+                app.OptionsDropDownLabel.Visible="on";
+                app.LoadImage2Button.Visible="off"
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"
+            elseif value == "Invert Image"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.Image2Panel.Visible="off"
+                app.OptionsDropDown.Visible="off";
+                app.OptionsDropDownLabel.Visible="off";
+                app.LoadImage2Button.Visible="off"
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"
+            elseif value == "Add Background to greenscreen Image"
+                app.Image2Panel.Visible="on";
+                app.LoadImage2Button.Visible="on";
+                app.OptionsDropDown.Visible="off";
+                app.OptionsDropDownLabel.Visible="off";
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"
+            elseif value == "Diadic Operations"
+                app.Image2Panel.Visible="on";
+                app.LoadImage2Button.Visible="on";
+                app.OptionsDropDown.Visible="on";
+                app.OptionsDropDownLabel.Visible="on";
+                app.OptionsDropDown.Items=["Add","Subtract","Multiply","Divide"];
+                app.OptionsDropDown.Value="Add";
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off";
+            elseif value == "Image Equalization"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.Image2Panel.Visible="off"
+                app.OptionsDropDown.Visible="off";
+                app.OptionsDropDownLabel.Visible="off";
+                app.LoadImage2Button.Visible="off"
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"
+            elseif value == "Blur Image"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.Image2Panel.Visible="off"
+                app.OptionsDropDown.Visible="off";
+                app.OptionsDropDownLabel.Visible="off";
+                app.LoadImage2Button.Visible="off"
+                app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off"                
+            elseif value == "Rotate Image"
+                app.ChangeBrightnessSliderLabel.Text = "Rotation Value";
+                app.ChangeBrightnessSlider.Limits = [0 360];
+                app.ChangeBrightnessSlider.Value = 0;
+                app.Image2Panel.Visible="off";
+                app.LoadImage2Button.Visible="off";
+                app.ChangeBrightnessSliderLabel.Visible = "on";
+                app.ChangeBrightnessSlider.Visible = "on";
+                app.OptionsDropDown.Visible="off";
+                app.OptionsDropDownLabel.Visible="off";
+                app.ProcessImageButton.Visible="off"
+                app.ValueEditField.Visible = "on";
+                app.ValueEditFieldLabel.Visible="on";
+                app.ValueEditFieldLabel.Text="Rotation Value";
+            elseif value == "Message Encoding"
+                app.ChangeBrightnessSliderLabel.Visible = "off";
+                app.ChangeBrightnessSlider.Visible = "off";
+                app.ProcessImageButton.Visible="on";
+                app.Image2Panel.Visible="off";
+                app.OptionsDropDown.Visible="on";
+                app.OptionsDropDownLabel.Visible="on";
+                app.OptionsDropDown.Items=["Encode","Decode"];
+                app.OptionsDropDown.Value="Encode";
+                app.LoadImage2Button.Visible="off";
+                app.ValueEditField.Visible = "on";
+                app.ValueEditFieldLabel.Visible="on"
+                app.ValueEditFieldLabel.Text="Enter text to encode:";
+            end
+        end
+
+        % Button pushed function: LoadImage1Button
+        function LoadImage1ButtonPushed(app, event)
+            global img1;
+            [fileName pathName] = uigetfile('*jpg; *.png; *.jpeg; *.tif', 'Select an Image');
+            if pathName ~= 0
+                path = [pathName, fileName];
+                img1 = imread(path);
+                app.UITable.Visible='on';
+                imgInfo=imfinfo(path);
+                imgInfo = struct2cell(imgInfo);
+                app.UITable.Data=[imgInfo(7),imgInfo(6),imgInfo(4),imgInfo(9)];
+                imshow(img1,'Parent',app.Image1);
+            end
+        end
+
+        % Button pushed function: LoadImage2Button
+        function LoadImage2ButtonPushed(app, event)
+            global img2;
+            [fileName pathName] = uigetfile('*jpg; *.png; *.jpeg; *.tif', 'Select an Image');
+            if pathName ~= 0
+                path = [pathName, fileName];
+                img2 = imread(path);
+%                 img2 = im2double(img2);
+                imshow(img2,'Parent',app.Image2);
+            end
+        end
+
+        % Button pushed function: ProcessImageButton
+        function ProcessImageButtonPushed(app, event)
+            global img1;
+            global img2;
+            global value;
+            global processedImg;
+            if value == "Add Background to greenscreen Image"
+                processedImg=greenScreenBackground(app, img1, img2);
+            elseif value == "Invert Image"
+                processedImg=invertImage(app, img1);
+            elseif value == "Color Splash" 
+                processedImg=colorSplash(app, img1, app.OptionsDropDown.Value);
+            elseif value == "Grayscale Image" 
+                processedImg=grayscaleImage(app, img1, app.OptionsDropDown.Value);
+            elseif value == "Binarize Image" 
+                processedImg=BinarizeImage(app, img1, 0.5);
+            elseif value == "Apply Filters"
+                processedImg=applyFilters(app,img1,app.OptionsDropDown.Value);
+            elseif value == "Change Contrast" && app.OptionsDropDown.Value == "Contrast Stretching"
+                processedImg=contrastStretching(app,img1);
+            elseif value == "Diadic Operations"
+                processedImg = diadicOperations(app, img1, img2, app.OptionsDropDown.Value);
+            elseif value == "Image Equalization"
+                processedImg=img1;
+                processedImg=histeq(processedImg);
+            elseif value == "Blur Image"
+                processedImg=imgaussfilt(img1,10);
+            elseif value == "Message Encoding" && app.OptionsDropDown.Value == "Encode"
+                processedImg=messageEncoding(app,img1,app.ValueEditField.Value);
+            elseif value == "Message Encoding" && app.OptionsDropDown.Value == "Decode"
+                messageDecoding(app, img1);
+                processedImg = img1;
+            end
+            imshow(processedImg,"Parent",app.ProcessedImg);
+        end
+
+        % Value changing function: ChangeBrightnessSlider
+        function ChangeBrightnessSliderValueChanging(app, event)
+            changingValue = event.Value;
+            global img1;
+            global value;
+            global processedImg;
+            doubleImg1 = im2double(img1);
+            processedImg = img1;
+            if value == "Change Brightness"
+                processedImg = img1+changingValue;
+            elseif value == "Change Gemma Correction"
+                processedImg = doubleImg1.^changingValue;
+            elseif value == "Change Contrast" && app.OptionsDropDown.Value=="Change Contrast Value"
+                processedImg = changingValue*doubleImg1;
+            elseif value=="Rotate Image"
+                processedImg=imrotate(img1,changingValue);
+            end
+            app.ValueEditField.Value=string(changingValue);
+            imshow(processedImg,"Parent",app.ProcessedImg);
+        end
+
+        % Value changed function: OptionsDropDown
+        function OptionsDropDownValueChanged(app, event)
+                if app.OptionsDropDown.Value == "Contrast Stretching"
+                    app.ChangeBrightnessSliderLabel.Visible = "off";
+                    app.ChangeBrightnessSlider.Visible = "off";
+                    app.ProcessImageButton.Visible="on";
+                    app.ValueEditField.Visible = "off";
+                app.ValueEditFieldLabel.Visible="off";
+                elseif app.OptionsDropDown.Value == "Change Contrast Value"
+                    app.ChangeBrightnessSliderLabel.Visible = "on";
+                    app.ChangeBrightnessSlider.Limits=[0 2.5];
+                    app.ChangeBrightnessSlider.Value=1;
+                    app.ChangeBrightnessSlider.Visible = "on";
+                    app.ValueEditField.Visible = "on";
+                    app.ValueEditFieldLabel.Visible="on";
+                    app.ValueEditFieldLabel.Text="Contrast  Value";
+                    app.ProcessImageButton.Visible="off";
+                end
+        end
+
+        % Button pushed function: SaveImageButton
+        function SaveImageButtonPushed(app, event)
+            global processedImg;
+            [baseFileName, ImageFolder] = uiputfile(); %  To get the name of the file that the user wants to save!
+            fullFileName = fullfile(ImageFolder, baseFileName)
+            imwrite(processedImg, fullFileName);
+%             if pathName ~= 0
+%                 path = [pathName, fileName];
+%                 imwrite(processedImg,path);
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Color = [0.051 0.1216 0.1765];
+            app.UIFigure.Position = [100 100 942 761];
+            app.UIFigure.Name = 'MATLAB App';
+
+            % Create Image1Panel
+            app.Image1Panel = uipanel(app.UIFigure);
+            app.Image1Panel.Title = 'Image 1';
+            app.Image1Panel.BackgroundColor = [0.6196 0.6392 0.6902];
+            app.Image1Panel.Position = [74 359 344 287];
+
+            % Create Image1
+            app.Image1 = uiaxes(app.Image1Panel);
+            app.Image1.Toolbar.Visible = 'off';
+            app.Image1.XTick = [];
+            app.Image1.YTick = [];
+            app.Image1.ZTick = [];
+            app.Image1.Visible = 'off';
+            app.Image1.Position = [2 9 333 251];
+
+            % Create OperationsDropDownLabel
+            app.OperationsDropDownLabel = uilabel(app.UIFigure);
+            app.OperationsDropDownLabel.HorizontalAlignment = 'right';
+            app.OperationsDropDownLabel.FontColor = [0.9804 0.8824 0.8745];
+            app.OperationsDropDownLabel.Position = [74 698 65 22];
+            app.OperationsDropDownLabel.Text = 'Operations';
+
+            % Create OperationsDropDown
+            app.OperationsDropDown = uidropdown(app.UIFigure);
+            app.OperationsDropDown.Items = {'Change Brightness', 'Invert Image', 'Binarize Image', 'Grayscale Image', 'Change Contrast', 'Change Gemma Correction', 'Add Background to greenscreen Image', 'Color Splash', 'Apply Filters', 'Image Equalization', 'Diadic Operations', 'Blur Image', 'Rotate Image', 'Message Encoding'};
+            app.OperationsDropDown.ValueChangedFcn = createCallbackFcn(app, @OperationsDropDownValueChanged, true);
+            app.OperationsDropDown.BackgroundColor = [0.9804 0.8824 0.8745];
+            app.OperationsDropDown.Position = [154 685 133 47];
+            app.OperationsDropDown.Value = 'Change Brightness';
+
+            % Create OptionsDropDownLabel
+            app.OptionsDropDownLabel = uilabel(app.UIFigure);
+            app.OptionsDropDownLabel.HorizontalAlignment = 'right';
+            app.OptionsDropDownLabel.FontColor = [1 1 1];
+            app.OptionsDropDownLabel.Visible = 'off';
+            app.OptionsDropDownLabel.Position = [541 278 47 22];
+            app.OptionsDropDownLabel.Text = 'Options';
+
+            % Create OptionsDropDown
+            app.OptionsDropDown = uidropdown(app.UIFigure);
+            app.OptionsDropDown.ValueChangedFcn = createCallbackFcn(app, @OptionsDropDownValueChanged, true);
+            app.OptionsDropDown.Visible = 'off';
+            app.OptionsDropDown.BackgroundColor = [0.9804 0.8824 0.8745];
+            app.OptionsDropDown.Position = [603 261 126 55];
+
+            % Create ProcessImageButton
+            app.ProcessImageButton = uibutton(app.UIFigure, 'push');
+            app.ProcessImageButton.ButtonPushedFcn = createCallbackFcn(app, @ProcessImageButtonPushed, true);
+            app.ProcessImageButton.BackgroundColor = [0.9804 0.8784 0.8706];
+            app.ProcessImageButton.Visible = 'off';
+            app.ProcessImageButton.Position = [748 138 173 38];
+            app.ProcessImageButton.Text = 'Process Image';
+
+            % Create Image2Panel
+            app.Image2Panel = uipanel(app.UIFigure);
+            app.Image2Panel.Title = 'Image 2';
+            app.Image2Panel.Visible = 'off';
+            app.Image2Panel.BackgroundColor = [0.6196 0.6392 0.6902];
+            app.Image2Panel.Position = [541 359 344 287];
+
+            % Create Image2
+            app.Image2 = uiaxes(app.Image2Panel);
+            app.Image2.Toolbar.Visible = 'off';
+            app.Image2.XTick = [];
+            app.Image2.YTick = [];
+            app.Image2.ZTick = [];
+            app.Image2.Visible = 'off';
+            app.Image2.Position = [2 9 333 251];
+
+            % Create ProcessedImagePanel
+            app.ProcessedImagePanel = uipanel(app.UIFigure);
+            app.ProcessedImagePanel.Title = 'Processed Image';
+            app.ProcessedImagePanel.BackgroundColor = [0.6196 0.6392 0.6902];
+            app.ProcessedImagePanel.Position = [74 47 344 287];
+
+            % Create ProcessedImg
+            app.ProcessedImg = uiaxes(app.ProcessedImagePanel);
+            app.ProcessedImg.Toolbar.Visible = 'off';
+            app.ProcessedImg.XTick = [];
+            app.ProcessedImg.YTick = [];
+            app.ProcessedImg.ZTick = [];
+            app.ProcessedImg.Visible = 'off';
+            app.ProcessedImg.Position = [2 9 333 251];
+
+            % Create LoadImage1Button
+            app.LoadImage1Button = uibutton(app.UIFigure, 'push');
+            app.LoadImage1Button.ButtonPushedFcn = createCallbackFcn(app, @LoadImage1ButtonPushed, true);
+            app.LoadImage1Button.BackgroundColor = [0.9804 0.8824 0.8745];
+            app.LoadImage1Button.Position = [329 654 89 45];
+            app.LoadImage1Button.Text = 'Load Image 1';
+
+            % Create LoadImage2Button
+            app.LoadImage2Button = uibutton(app.UIFigure, 'push');
+            app.LoadImage2Button.ButtonPushedFcn = createCallbackFcn(app, @LoadImage2ButtonPushed, true);
+            app.LoadImage2Button.BackgroundColor = [0.9804 0.8824 0.8745];
+            app.LoadImage2Button.Visible = 'off';
+            app.LoadImage2Button.Position = [789 654 89 45];
+            app.LoadImage2Button.Text = 'Load Image 2';
+
+            % Create ChangeBrightnessSliderLabel
+            app.ChangeBrightnessSliderLabel = uilabel(app.UIFigure);
+            app.ChangeBrightnessSliderLabel.Tag = 'sliderText';
+            app.ChangeBrightnessSliderLabel.HorizontalAlignment = 'right';
+            app.ChangeBrightnessSliderLabel.FontColor = [0.9804 0.8824 0.8745];
+            app.ChangeBrightnessSliderLabel.Position = [519 224 108 22];
+            app.ChangeBrightnessSliderLabel.Text = 'Change Brightness';
+
+            % Create ChangeBrightnessSlider
+            app.ChangeBrightnessSlider = uislider(app.UIFigure);
+            app.ChangeBrightnessSlider.Limits = [-255 255];
+            app.ChangeBrightnessSlider.ValueChangingFcn = createCallbackFcn(app, @ChangeBrightnessSliderValueChanging, true);
+            app.ChangeBrightnessSlider.FontColor = [0.9804 0.8824 0.8745];
+            app.ChangeBrightnessSlider.Position = [648 233 230 7];
+
+            % Create ValueEditFieldLabel
+            app.ValueEditFieldLabel = uilabel(app.UIFigure);
+            app.ValueEditFieldLabel.FontColor = [0.9804 0.8824 0.8745];
+            app.ValueEditFieldLabel.Position = [548 147 55 22];
+            app.ValueEditFieldLabel.Text = 'Value';
+
+            % Create ValueEditField
+            app.ValueEditField = uieditfield(app.UIFigure, 'text');
+            app.ValueEditField.BackgroundColor = [0.9804 0.8824 0.8745];
+            app.ValueEditField.Position = [633 139 89 37];
+
+            % Create UITable
+            app.UITable = uitable(app.UIFigure);
+            app.UITable.BackgroundColor = [0.6196 0.6392 0.6902];
+            app.UITable.ColumnName = {'Image Height'; 'Image Width'; 'format'; 'Color Type'};
+            app.UITable.RowName = {};
+            app.UITable.Visible = 'off';
+            app.UITable.Position = [542 1 401 56];
+
+            % Create SaveImageButton
+            app.SaveImageButton = uibutton(app.UIFigure, 'push');
+            app.SaveImageButton.ButtonPushedFcn = createCallbackFcn(app, @SaveImageButtonPushed, true);
+            app.SaveImageButton.BackgroundColor = [0.9804 0.8784 0.8706];
+            app.SaveImageButton.Position = [748 75 173 38];
+            app.SaveImageButton.Text = 'Save Image';
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = DIPproject_exported
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
